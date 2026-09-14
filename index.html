@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Goals Initiative - Relief Dashboard</title>
+    <style>
+        /* CSS RESET & VARIABLES */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        }
+
+        :root {
+            --samsung-blue: #1428a0;
+            --samsung-light-blue: #0077ff;
+            --bg-dark: #000000;
+            --bg-light: #f4f7fe;
+            --text-dark: #1d1d1f;
+            --card-bg: #ffffff;
+            --pending-yellow: #f59e0b;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #ffffff;
+            overflow: hidden; /* Prevent scrolling during boot screen */
+        }
+
+        /* ---------------------------------- */
+        /* BOOT SCREEN STYLES                 */
+        /* ---------------------------------- */
+        #boot-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 1s ease, visibility 1s ease;
+        }
+
+        .samsung-logo-container {
+            text-align: center;
+            opacity: 0;
+            animation: fadeInLogo 2s ease-in forwards 0.5s;
+        }
+
+        .samsung-logo {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: 12px;
+            color: #ffffff;
+            text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+            margin-bottom: 8px;
+            animation: glowPulse 2.5s infinite alternate ease-in-out;
+        }
+
+        .samsung-subtext {
+            font-size: 1rem;
+            font-weight: 300;
+            letter-spacing: 4px;
+            color: #a0a0a0;
+            text-transform: uppercase;
+        }
+
+        .glow-ring {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: var(--samsung-light-blue);
+            margin-bottom: 30px;
+            opacity: 0;
+            animation: fadeInLogo 1s ease-in forwards 1s, spin 1.2s linear infinite;
+        }
+
+        .action-container {
+            margin-top: 40px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 1s ease forwards 4.5s;
+        }
+
+        .btn-proceed {
+            background: linear-gradient(135deg, #0077ff, #1428a0);
+            color: #ffffff;
+            border: none;
+            padding: 14px 36px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 119, 255, 0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            letter-spacing: 1px;
+        }
+
+        .btn-proceed:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 0 25px rgba(0, 119, 255, 0.8);
+        }
+
+        @keyframes fadeInLogo { to { opacity: 1; } }
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+        @keyframes glowPulse {
+            0% { text-shadow: 0 0 10px rgba(255, 255, 255, 0.2); }
+            100% { text-shadow: 0 0 25px rgba(0, 119, 255, 0.9), 0 0 40px rgba(0, 119, 255, 0.6); }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ---------------------------------- */
+        /* GLOBAL GOALS DASHBOARD STYLES      */
+        /* ---------------------------------- */
+        #dashboard {
+            display: none;
+            opacity: 0;
+            min-height: 100vh;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            transition: opacity 0.8s ease;
+        }
+
+        header {
+            background-color: #ffffff;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .brand-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            color: var(--samsung-blue);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, #1428a0, #0077ff);
+            color: #ffffff;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 119, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .balance-info h2 {
+            font-size: 1rem;
+            font-weight: 400;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .balance-info .amount {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .mission-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .mission-grid { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        }
+
+        .panel h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--samsung-blue);
+            margin-bottom: 15px;
+        }
+
+        .panel p {
+            line-height: 1.6;
+            color: #4a4a4a;
+            margin-bottom: 15px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            text-align: center;
+        }
+
+        .stat-card .number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--samsung-blue);
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            font-size: 0.85rem;
+            color: #777;
+            text-transform: uppercase;
+        }
+
+        /* ---------------------------------- */
+        /* MODAL & WITHDRAWAL STYLES          */
+        /* ---------------------------------- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .modal-box {
+            background: #ffffff;
+            color: var(--text-dark);
+            width: 90%;
+            max-width: 520px;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            font-size: 1.3rem;
+            color: var(--samsung-blue);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #888;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #f0f4f9;
+            padding: 5px;
+            border-radius: 12px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            font-weight: 600;
+            cursor: pointer;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: #ffffff;
+            color: var(--samsung-blue);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus {
+            border-color: var(--samsung-light-blue);
+        }
+
+        /* Loading Spinner */
+        .loading-state {
+            display: none;
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--samsung-light-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        /* Pending Status Screen */
+        .pending-box {
+            display: none;
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        .status-badge-pending {
+            display: inline-block;
+            background: #fff8e1;
+            color: var(--pending-yellow);
+            border: 1px solid #ffe082;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+        }
+
+        .pending-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+
+        .pending-desc {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        /* Structured Note Box Section */
+        .system-note-box {
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .system-note-header {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .system-note-content {
+            font-size: 0.85rem;
+            color: #334155;
+            line-height: 1.4;
+        }
+
+        .support-card {
+            background: #eef5ff;
+            border: 1px solid #d0e1fd;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 0.85rem;
+            color: var(--samsung-blue);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- BOOT SCREEN -->
+    <div id="boot-screen">
+        <div class="glow-ring"></div>
+        <div class="samsung-logo-container">
+            <div class="samsung-logo">SAMSUNG</div>
+            <div class="samsung-subtext">Welcome to Global Goals</div>
+        </div>
+        
+        <div class="action-container">
+            <button class="btn-proceed" onclick="enterDashboard()">Proceed to Dashboard &rarr;</button>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="dashboard">
+        <header>
+            <div class="brand-title">SAMSUNG | Global Goals</div>
+            <div style="font-weight: 600; color: #555;">Digital Relief Fund</div>
+        </header>
+
+        <div class="container">
+            <!-- Balance Card -->
+            <div class="balance-card">
+                <div class="balance-info">
+                    <h2>Total Allocated Relief Fund</h2>
+                    <div class="amount">$200,000</div>
+                </div>
+                <button class="btn-proceed" style="background: #ffffff; color: var(--samsung-blue); font-weight: 700;" onclick="openWithdrawModal()">Withdraw Funds</button>
+            </div>
+
+            <!-- Mission Description -->
+            <div class="mission-grid">
+                <div class="panel">
+                    <h3>Digital Financial Recovery & Relief Initiative</h3>
+                    <p>
+                        As part of our commitment to sustainable economic inclusion, this program provides financial assistance and recovery resources to individuals affected by online fraud, frozen assets, or technical issues that prevent access to their funds.
+                    </p>
+                    <p>
+                        In today's interconnected digital economy, financial instability caused by lost online assets can significantly impact lives. This fund helps bridge the gap by supporting individuals while they work to recover locked or inaccessible funds online.
+                    </p>
+                </div>
+
+                <div class="panel" style="background: #eef5ff;">
+                    <h3 style="font-size: 1.1rem;">Why Support Matters</h3>
+                    <p style="font-size: 0.95rem;">
+                        Loss of funds online often leaves individuals with limited legal or technical recourse. Providing accessible aid helps restore digital security and financial confidence.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Statistics Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="number">1,420+</div>
+                    <div class="label">Claims Processed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number">98%</div>
+                    <div class="label">Verification Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number">85</div>
+                    <div class="label">Countries Supported</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WITHDRAWAL MODAL -->
+    <div class="modal-overlay" id="withdrawModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Request Funds Transfer</h3>
+                <button class="close-btn" onclick="closeWithdrawModal()">&times;</button>
+            </div>
+
+            <!-- Input Form View -->
+            <div id="modalFormContent">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" id="btcTabBtn" onclick="switchTab('btc')">Bitcoin (BTC)</button>
+                    <button class="tab-btn" id="bankTabBtn" onclick="switchTab('bank')">Bank / IBAN</button>
+                </div>
+
+                <!-- BTC Form -->
+                <div id="btcForm" class="input-group">
+                    <label for="btcAddress">Bitcoin Wallet Address</label>
+                    <input type="text" id="btcAddress" placeholder="Enter BTC destination address">
+                </div>
+
+                <!-- Bank Form -->
+                <div id="bankForm" class="input-group" style="display: none;">
+                    <label for="bankIban">IBAN / Account Number</label>
+                    <input type="text" id="bankIban" placeholder="Enter IBAN or account number" style="margin-bottom: 12px;">
+                    <label for="bankName">Bank Name / Swift Code</label>
+                    <input type="text" id="bankName" placeholder="e.g. Barclays / SWIFT Code">
+                </div>
+
+                <button class="btn-proceed" style="width: 100%; border-radius: 10px;" onclick="processWithdrawal()">Submit Request</button>
+            </div>
+
+            <!-- Smooth Loading State -->
+            <div class="loading-state" id="loadingState">
+                <div class="spinner"></div>
+                <p style="font-weight: 600; color: #333;">Submitting Transfer Request...</p>
+                <p style="font-size: 0.85rem; color: #777; margin-top: 5px;">Routing request through approval gateway</p>
+            </div>
+
+            <!-- Pending Approval Status Screen -->
+            <div class="pending-box" id="pendingBox">
+                <div class="status-badge-pending">Status: Pending</div>
+                <div class="pending-title">Awaiting SAMSUNG Approval</div>
+                <p class="pending-desc">
+                    Your transfer request for <strong>$200,000</strong> has been successfully submitted and is currently queued for security verification.
+                </p>
+
+                <!-- Designated Note Section -->
+                <div class="system-note-box">
+                    <div class="system-note-header">
+                        <span>System Note & Remarks</span>
+                        <span>Ref: #TRX-9942</span>
+                    </div>
+                    <div class="system-note-content">
+                        [ Additional notes, batch information, or processing details can be entered here ]
+                    </div>
+                </div>
+                
+                <div class="support-card">
+                    <p>If this process takes longer than expected, please contact support for further assistance.</p>
+                </div>
+
+                <button class="btn-proceed" style="width: 100%; border-radius: 10px; margin-top: 20px; font-size: 0.9rem;" onclick="closeWithdrawModal()">Close Window</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JS TRANSITION AND LOGIC -->
+    <script>
+        function enterDashboard() {
+            const bootScreen = document.getElementById('boot-screen');
+            const dashboard = document.getElementById('dashboard');
+
+            bootScreen.style.opacity = '0';
+            bootScreen.style.visibility = 'hidden';
+
+            document.body.style.overflow = 'auto';
+
+            dashboard.style.display = 'block';
+            setTimeout(() => {
+                dashboard.style.opacity = '1';
+            }, 50);
+        }
+
+        function openWithdrawModal() {
+            document.getElementById('withdrawModal').style.display = 'flex';
+        }
+
+        function closeWithdrawModal() {
+            document.getElementById('withdrawModal').style.display = 'none';
+            // Reset modal state
+            document.getElementById('modalFormContent').style.display = 'block';
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('pendingBox').style.display = 'none';
+        }
+
+        function switchTab(type) {
+            const btcTab = document.getElementById('btcTabBtn');
+            const bankTab = document.getElementById('bankTabBtn');
+            const btcForm = document.getElementById('btcForm');
+            const bankForm = document.getElementById('bankForm');
+
+            if (type === 'btc') {
+                btcTab.classList.add('active');
+                bankTab.classList.remove('active');
+                btcForm.style.display = 'block';
+                bankForm.style.display = 'none';
+            } else {
+                bankTab.classList.add('active');
+                btcTab.classList.remove('active');
+                btcForm.style.display = 'none';
+                bankForm.style.display = 'block';
+            }
+        }
+
+        function processWithdrawal() {
+            // Hide input form
+            document.getElementById('modalFormContent').style.display = 'none';
+            // Show loading state
+            document.getElementById('loadingState').style.display = 'block';
+
+            // Transition to pending state after loading
+            setTimeout(() => {
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('pendingBox').style.display = 'block';
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
